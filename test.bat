@@ -1,2 +1,0 @@
-python src\index.py -i ..\patsnap-corpus -d dictionary.txt -p postings.txt 1> bin\index.console.txt 2> bin\index.log.txt
-REM python src/search.py -d dictionary.txt -p postings.txt -q jin_queries.txt -o output.txt 1> search.console.txt 2> search.log.txt

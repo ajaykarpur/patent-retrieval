@@ -228,4 +228,4 @@ if k == None:
     k = len(os.listdir(doc_directory))
 
 my_index = Indexer(doc_directory, dict_filename, post_filename, k)
-pickle.dump(k, open(os.path.join("bin/", "k.txt"), "wb"))
+# pickle.dump(k, open(os.path.join("bin/", "k.txt"), "wb"))

@@ -1,0 +1,2 @@
+python ../src/index.py -i ../../patsnap-corpus -d ../bin/dictionary.txt -p .../bin/postings.txt 1> ../bin/index.console.txt 2> ../bin/index.log.txt
+python ../src/search.py -d ../bin/dictionary.txt -p ../bin/postings.txt -q q1.xml -o output.txt 1> ../bin/search.console.txt 2> ../bin/search.log.txt
