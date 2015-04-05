@@ -99,3 +99,22 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+
+# Coding/Debugging
+# =========================
+
+# testing
+dictionary.txt
+postings.txt
+output.txt
+index.console.txt
+index.log.txt
+search.console.txt
+search.log.txt
+all_doc_ids.txt
+
+# PyDev
+.project
+.pydevproject
+k.txt
+doc_lengths.txt
