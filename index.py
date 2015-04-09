@@ -58,6 +58,8 @@ class Indexer(object):
 
         self.build_model()
 
+        self.dump()
+
         
     def parse_xml(self, dirname):
 
@@ -114,6 +116,10 @@ class Indexer(object):
     def build_model(self):
         self.topic_model.update(self.corpus)
         print(self.topic_model.show_topics())
+
+    def dump(self):
+        pickle.dump(self.dictionary, open(self.dict_filename, "wb"))
+        pickle.dump(self.topic_model, open(self.post_filename, "wb"))
 
 #-------------------------------------------------------------------------------
 # added a new flag to accept values of k (for subsets of k documents)
