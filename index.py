@@ -45,6 +45,7 @@ class Indexer(object):
         self.post_filename = post_filename
         self.dictionary = gensim.corpora.Dictionary()
         self.corpus = []
+        self.patent_mapping = {}
 
         self.stopwords = set(string.punctuation)
         with open(os.path.join("lib", "uspto_stopwords")) as s:
@@ -54,9 +55,11 @@ class Indexer(object):
 
         self.parse_xml(doc_directory)
 
-        self.topic_model = gensim.models.LdaModel(num_topics = 100, id2word = self.dictionary)
-
+        self.topic_model = gensim.models.LdaModel(num_topics = 500, id2word = self.dictionary)
         self.build_model()
+
+        self.similarity_index = gensim.similarities.Similarity("index", self.corpus, num_features = self.corpus.num_terms)
+        self.similarity_index.save("similarity_index")
 
         self.dump()
 
@@ -93,7 +96,7 @@ class Indexer(object):
                     token_generators.append(gensim.utils.tokenize(fields["Assignee(s)"], lowercase = True))
                 
                 for tokens in token_generators:
-                    # tokens = map(lambda t: stemmer.stem(t), tokens)
+                    tokens = map(lambda t: stemmer.stem(t), tokens)
                     for token in tokens:
                         if token not in self.stopwords:
                             all_tokens[patent_num].append(token)
@@ -105,13 +108,17 @@ class Indexer(object):
                 if "IPC Group" in fields:
                     all_tokens[patent_num].append(fields["IPC Group"].strip())
 
-    # def create_dictionary(self):
         documents = []
-        for patent_num, text in all_tokens.iteritems():
+        for i, (patent_num, text) in enumerate(all_tokens.iteritems()):
             documents.append(text)
+            self.patent_mapping[i] = patent_num
         self.dictionary.add_documents(documents)
 
-        self.corpus = [self.dictionary.doc2bow(text) for document in documents]
+        # self.corpus = [self.dictionary.doc2bow(text) for document in documents]
+        # corpora.MmCorpus.serialize("corpus.mm", self.corpus)
+
+        gensim.corpora.MmCorpus.serialize("corpus.mm", [self.dictionary.doc2bow(text) for document in documents])
+        self.corpus = gensim.corpora.MmCorpus("corpus.mm")
 
     def build_model(self):
         self.topic_model.update(self.corpus)
@@ -120,6 +127,8 @@ class Indexer(object):
     def dump(self):
         pickle.dump(self.dictionary, open(self.dict_filename, "wb"))
         pickle.dump(self.topic_model, open(self.post_filename, "wb"))
+        pickle.dump(self.patent_mapping, open("patent_mapping", "wb"))
+        pickle.dump(self.stopwords, open("stopwords", "wb"))
 
 #-------------------------------------------------------------------------------
 # added a new flag to accept values of k (for subsets of k documents)

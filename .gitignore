@@ -119,3 +119,9 @@ all_doc_ids.txt
 .pydevproject
 k.txt
 doc_lengths.txt
+similarity_index
+patent_mapping
+index.0
+corpus.mm.index
+corpus.mm
+stopwords
