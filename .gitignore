@@ -113,6 +113,7 @@ index.log.txt
 search.console.txt
 search.log.txt
 all_doc_ids.txt
+test.sh
 
 # PyDev
 .project
