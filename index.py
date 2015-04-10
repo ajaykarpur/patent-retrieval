@@ -4,7 +4,7 @@ import getopt
 import os
 import string
 import pickle
-from collections import defaultdict, Counter
+from collections import defaultdict
 import math
 import nltk
 import re
@@ -30,11 +30,8 @@ except ImportError:
             print("Failed to import ElementTree from any known place")
             sys.exit()
 
-try:
-    from lib import gensim
-except ImportError:
-    print("Failed to import gensim from lib")
-    sys.exit()
+sys.path.append("lib")
+import gensim
 
 #-------------------------------------------------------------------------------
 
@@ -45,7 +42,7 @@ class Indexer(object):
         self.post_filename = post_filename
         self.dictionary = gensim.corpora.Dictionary()
         self.corpus = []
-        self.patent_mapping = {}
+        self.patent_mapping = {} # what if the problem is here...?
 
         self.stopwords = set(string.punctuation)
         with open(os.path.join("lib", "uspto_stopwords")) as s:
@@ -55,10 +52,10 @@ class Indexer(object):
 
         self.parse_xml(doc_directory)
 
-        self.topic_model = gensim.models.LdaModel(num_topics = 500, id2word = self.dictionary)
-        self.build_model()
+        self.topic_model = gensim.models.LdaModel(self.corpus, num_topics = 500, id2word = self.dictionary)
+        # self.topic_model = gensim.models.TfidfModel(self.corpus, dictionary = self.dictionary)
 
-        self.similarity_index = gensim.similarities.Similarity("index", self.corpus, num_features = self.corpus.num_terms)
+        self.similarity_index = gensim.similarities.Similarity("index", self.topic_model[self.corpus], num_features = self.corpus.num_terms)
         self.similarity_index.save("similarity_index")
 
         self.dump()
@@ -119,10 +116,6 @@ class Indexer(object):
 
         gensim.corpora.MmCorpus.serialize("corpus.mm", [self.dictionary.doc2bow(text) for document in documents])
         self.corpus = gensim.corpora.MmCorpus("corpus.mm")
-
-    def build_model(self):
-        self.topic_model.update(self.corpus)
-        print(self.topic_model.show_topics())
 
     def dump(self):
         pickle.dump(self.dictionary, open(self.dict_filename, "wb"))

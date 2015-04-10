@@ -45,12 +45,10 @@ from six import iteritems, u, string_types, unichr
 from six.moves import xrange
 
 try:
-    from lib import pattern
-    from pattern.text.en import parse
+    from pattern.en import parse
     logger.info("'pattern' package found; utils.lemmatize() is available for English")
     HAS_PATTERN = True
 except ImportError:
-    logger.info("'pattern' package NOT found")
     HAS_PATTERN = False
 
 

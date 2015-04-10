@@ -126,7 +126,7 @@ class Projection(utils.SaveLoad):
                     extra_dims=self.extra_dims)
             else:
                 try:
-                    from lib import sparsesvd
+                    import sparsesvd
                 except ImportError:
                     raise ImportError("`sparsesvd` module requested but not found; run `easy_install sparsesvd`")
                 logger.info("computing sparse SVD of %s matrix" % str(docs.shape))

@@ -28,11 +28,8 @@ except ImportError:
             print("Failed to import ElementTree from any known place")
             sys.exit()
 
-try:
-    from lib import gensim
-except ImportError:
-    print("Failed to import gensim from lib")
-    sys.exit()
+sys.path.append("lib")
+import gensim
 
 #-------------------------------------------------------------------------------
 
@@ -78,7 +75,8 @@ class Query(object):
         sims = sorted(enumerate(sims), key=lambda item: -item[1])
         with open(self.output_filename, 'w') as f:
             for doc_num, similarity in sims:
-                f.write(self.patent_mapping[doc_num] + "\n")
+                if (similarity > 0.0):
+                    f.write(self.patent_mapping[doc_num] + ", similarity = " + str(similarity) + "\n")
 
 
 def usage():
