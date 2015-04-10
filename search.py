@@ -76,8 +76,9 @@ class Query(object):
     def results(self):
         sims = self.index[self.query_vector]
         sims = sorted(enumerate(sims), key=lambda item: -item[1])
-        for doc_num, similarity in sims:
-            print self.patent_mapping[doc_num]
+        with open(self.output_filename, 'w') as f:
+            for doc_num, similarity in sims:
+                f.write(self.patent_mapping[doc_num] + "\n")
 
 
 def usage():
