@@ -114,6 +114,7 @@ search.console.txt
 search.log.txt
 all_doc_ids.txt
 test.sh
+temp-*
 
 # PyDev
 .project

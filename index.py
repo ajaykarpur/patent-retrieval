@@ -5,13 +5,10 @@ import os
 import string
 import pickle
 from collections import defaultdict
-import math
 import nltk
-import re
 import itertools
 
 stemmer = nltk.stem.porter.PorterStemmer()
-# tokenizer = nltk.tokenize.WordPunctTokenizer()
 
 try:
     from lxml import etree
@@ -30,19 +27,31 @@ except ImportError:
             print("Failed to import ElementTree from any known place")
             sys.exit()
 
-sys.path.append("lib")
+sys.path.append("lib") # import gensim from lib
 import gensim
 
 #-------------------------------------------------------------------------------
+
+# class MyCorpus(object): # experimental memory-friendly generator class for corpus
+#     def __init__(self, corpus_dict, gensim_dict):
+#         self.all_tokens = corpus_dict
+#         self.dictionary = gensim_dict
+#         self.patent_mapping = {}
+
+#     def __iter__(self):
+#         for i, (patent_num, text) in enumerate(self.all_tokens.iteritems()):
+#             self.patent_mapping[i] = patent_num
+#             yield dictionary.doc2bow(text)
+            
 
 class Indexer(object):
     def __init__(self, doc_directory, dict_filename, post_filename, k):
         self.k = k
         self.dict_filename = dict_filename
         self.post_filename = post_filename
-        self.dictionary = gensim.corpora.Dictionary()
-        self.corpus = []
-        self.patent_mapping = {} # what if the problem is here...?
+        self.dictionary = gensim.corpora.Dictionary() # for representing words with integer IDs
+        self.corpus = [] # initialize corpus, will later replace with gensim MmCorpus
+        self.patent_mapping = {} # for retaining patent numbers after LDA and similarity
 
         self.stopwords = set(string.punctuation)
         with open(os.path.join("lib", "uspto_stopwords")) as s:
@@ -52,13 +61,14 @@ class Indexer(object):
 
         self.parse_xml(doc_directory)
 
-        self.topic_model = gensim.models.LdaModel(self.corpus, num_topics = 500, id2word = self.dictionary)
-        # self.topic_model = gensim.models.TfidfModel(self.corpus, dictionary = self.dictionary)
+        self.topic_model = gensim.models.LdaModel(self.corpus, num_topics = 500, id2word = self.dictionary)     # LDA model
+        # self.topic_model = gensim.models.LsiModel(self.corpus, num_topics = 500, id2word = self.dictionary)   # LSI model
+        # self.topic_model = gensim.models.TfidfModel(self.corpus, dictionary = self.dictionary)                # tf-idf model
 
-        self.similarity_index = gensim.similarities.Similarity("index", self.topic_model[self.corpus], num_features = self.corpus.num_terms)
-        self.similarity_index.save("similarity_index")
+        self.similarity_index = gensim.similarities.Similarity("temp-index", self.topic_model[self.corpus], num_features = self.corpus.num_terms)
+        self.similarity_index.save("temp-similarity_index")
 
-        self.dump()
+        self.dump() # save to disk
 
         
     def parse_xml(self, dirname):
@@ -70,10 +80,10 @@ class Indexer(object):
 
 
             with open(os.path.join(dirname, patent_file)) as f:
-                if count == self.k: # index k documents
+                if count == self.k: # index k documents, for testing
                     break
 
-                fields = {}
+                fields = {} # representation of xml as Python dict
 
                 xml = etree.parse(f)
 
@@ -84,7 +94,7 @@ class Indexer(object):
                             if attribute != None and element.text != None:
                                 fields[attribute] = element.text.strip().encode("utf-8")
                 
-                token_generators = []
+                token_generators = [] # list of generators of tokens to be iterated through
                 if "Title" in fields:
                     token_generators.append(gensim.utils.tokenize(fields["Title"], lowercase = True))
                 if "Abstract" in fields:
@@ -98,6 +108,7 @@ class Indexer(object):
                         if token not in self.stopwords:
                             all_tokens[patent_num].append(token)
 
+                # added IPC for association with appropriate topic in LDA model
                 if "IPC Class" in fields:
                     all_tokens[patent_num].append(fields["IPC Class"].strip())
                 if "IPC Subclass" in fields:
@@ -111,17 +122,14 @@ class Indexer(object):
             self.patent_mapping[i] = patent_num
         self.dictionary.add_documents(documents)
 
-        # self.corpus = [self.dictionary.doc2bow(text) for document in documents]
-        # corpora.MmCorpus.serialize("corpus.mm", self.corpus)
-
-        gensim.corpora.MmCorpus.serialize("corpus.mm", [self.dictionary.doc2bow(text) for document in documents])
-        self.corpus = gensim.corpora.MmCorpus("corpus.mm")
+        gensim.corpora.MmCorpus.serialize("temp-corpus.mm", [self.dictionary.doc2bow(text) for document in documents])
+        self.corpus = gensim.corpora.MmCorpus("temp-corpus.mm")
 
     def dump(self):
         pickle.dump(self.dictionary, open(self.dict_filename, "wb"))
         pickle.dump(self.topic_model, open(self.post_filename, "wb"))
-        pickle.dump(self.patent_mapping, open("patent_mapping", "wb"))
-        pickle.dump(self.stopwords, open("stopwords", "wb"))
+        pickle.dump(self.patent_mapping, open("temp-patent_mapping", "wb"))
+        pickle.dump(self.stopwords, open("temp-stopwords", "wb"))
 
 #-------------------------------------------------------------------------------
 # added a new flag to accept values of k (for subsets of k documents)

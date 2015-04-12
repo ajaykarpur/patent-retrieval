@@ -1,15 +1,12 @@
 #!/usr/bin/python
 import sys
 import getopt
-from collections import defaultdict, Counter
-import heapq
+from collections import defaultdict
 import string
 import pickle
-import math
 import nltk
 
 stemmer = nltk.stem.porter.PorterStemmer()
-# tokenizer = nltk.tokenize.WordPunctTokenizer()
 
 try:
     from lxml import etree
@@ -38,19 +35,22 @@ class Query(object):
         self.query_filename = queries_filename
         self.output_filename = output_filename
 
+        # open files produced by index
         self.dictionary = pickle.load(open(dict_filename, 'r'))
         self.topic_model = pickle.load(open(post_filename, 'r'))
-        self.patent_mapping = pickle.load(open("patent_mapping", 'r'))
-        self.index = gensim.similarities.Similarity.load("similarity_index")
+        self.patent_mapping = pickle.load(open("temp-patent_mapping", 'r'))
+        self.index = gensim.similarities.Similarity.load("temp-similarity_index")
 
-        self.stopwords = pickle.load(open("stopwords", 'r'))
-        query_stopwords = set(["relevant", "documents"])
+        print self.dictionary, self.topic_model, self.patent_mapping, self.index
+
+        self.stopwords = pickle.load(open("temp-stopwords", 'r'))
+        query_stopwords = set(["relevant", "documents", "describe"])
         self.stopwords = self.stopwords.union(query_stopwords)
 
-        self.query_bag = self.parse_query()
-        self.query_vector = self.topic_model[self.query_bag]
+        self.query_bag = self.parse_query() # query to bag of words
+        self.query_vector = self.topic_model[self.query_bag] # bag of words to vector
         
-        self.results()
+        self.results() # run vector through Similarity, return sorted list of results
 
     def parse_query(self):
         tokens = []
@@ -67,7 +67,7 @@ class Query(object):
 
         return self.dictionary.doc2bow(tokens)
 
-    def find_topic(self):
+    def find_topic(self): # experimental
         return self.topic_model.print_topic(self.query_vector)
 
     def results(self):
@@ -76,7 +76,8 @@ class Query(object):
         with open(self.output_filename, 'w') as f:
             for doc_num, similarity in sims:
                 if (similarity > 0.0):
-                    f.write(self.patent_mapping[doc_num] + ", similarity = " + str(similarity) + "\n")
+                    f.write(self.patent_mapping[doc_num] + " ")
+                    # f.write(self.patent_mapping[doc_num] + ", similarity = " + str(similarity) + "\n")
 
 
 def usage():
